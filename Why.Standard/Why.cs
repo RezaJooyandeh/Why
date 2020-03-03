@@ -109,9 +109,13 @@ namespace Microsoft
 				var userDisplayName = user["displayName"].ToString();
 				OnEvent(new MemberFoundEvent(targetEmail, userDisplayName, 1));
 				if (email == targetEmail)
+				{
 					OnEvent(new MatchFoundEvent());
 
-				return new List<string> { userDisplayName };
+					return new List<string> { userDisplayName };
+				}
+
+				return null;
 			}
 
 			var list = await FindInGroup(rootGroup, 1);

@@ -142,7 +142,7 @@ namespace Microsoft
 				{
 					var json = (JObject)JsonConvert.DeserializeObject(stream.ReadToEnd());
 					var results = (JArray)json["value"];
-					group = results.Cast<JObject>().SingleOrDefault(x => (x["mail"]).Value<string>() == groupEmail);
+					group = results.Cast<JObject>().SingleOrDefault(x => (x["mail"]).Value<string>().ToLower() == groupEmail.ToLower());
 					if (group != null)
 						_groupCache[groupEmail] = group;
 				}

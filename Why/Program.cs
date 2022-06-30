@@ -1,6 +1,7 @@
 ﻿using CommandLine;
 using System;
 using System.Threading.Tasks;
+using UsingConsoleColors;
 
 namespace Microsoft
 {
@@ -18,7 +19,7 @@ namespace Microsoft
 
 		private static async Task Find(string toCC, string token)
 		{
-			using (new ForegroundColor(ConsoleColor.Yellow))
+			using (new ConsoleForegroundColor(ConsoleColor.Yellow))
 				Console.Write("Analysing addresses...");
 
 			var results = await new Why(Log).Find(toCC, token);
@@ -28,20 +29,20 @@ namespace Microsoft
 
 			if (results == null)
 			{
-				using (new ForegroundColor(ConsoleColor.Red))
+				using (new ConsoleForegroundColor(ConsoleColor.Red))
 					Console.WriteLine("Unable to perform the search.");
 			}
 			else if (results.Count == 0)
 			{
-				using (new ForegroundColor(ConsoleColor.Yellow))
+				using (new ConsoleForegroundColor(ConsoleColor.Yellow))
 					Console.WriteLine("Not found!");
 			}
 			else
 			{
-				using (new ForegroundColor(ConsoleColor.Yellow))
+				using (new ConsoleForegroundColor(ConsoleColor.Yellow))
 					Console.WriteLine("All the hits");
 
-				using (new ForegroundColor(ConsoleColor.Green))
+				using (new ConsoleForegroundColor(ConsoleColor.Green))
 				{
 					foreach (var item in results)
 						Console.WriteLine(item);
@@ -55,9 +56,9 @@ namespace Microsoft
 			{
 				case MemberFoundEvent m:
 					Console.WriteLine();
-					using (new ForegroundColor(ConsoleColor.White))
+					using (new ConsoleForegroundColor(ConsoleColor.White))
 						Console.Write(new string('·', m.Level - 1));
-					using (new ForegroundColor(ConsoleColor.Cyan))
+					using (new ConsoleForegroundColor(ConsoleColor.Cyan))
 					{
 						if (m.DisplayName != null)
 							Console.Write($"{m.DisplayName} <{m.Email}>");
@@ -67,37 +68,37 @@ namespace Microsoft
 					break;
 				case MemberNotFoundEvent m:
 					Console.WriteLine();
-					using (new ForegroundColor(ConsoleColor.White))
+					using (new ConsoleForegroundColor(ConsoleColor.White))
 						Console.Write(new string('·', m.Level - 1));
-					using (new ForegroundColor(ConsoleColor.Cyan))
+					using (new ConsoleForegroundColor(ConsoleColor.Cyan))
 						Console.Write(m.Email);
-					using (new ForegroundColor(ConsoleColor.Red))
+					using (new ConsoleForegroundColor(ConsoleColor.Red))
 						Console.Write(" [Not found]");
 					break;
 				case GroupLoadedEvent g:
-					using (new ForegroundColor(ConsoleColor.Yellow))
+					using (new ConsoleForegroundColor(ConsoleColor.Yellow))
 						Console.Write($"{new string('\b', " [Loading...]".Length)} [Members: {g.MemberCount}]");
 					break;
 				case GroupLoadingEvent _:
-					using (new ForegroundColor(ConsoleColor.White))
+					using (new ConsoleForegroundColor(ConsoleColor.White))
 						Console.Write(" [Loading...]");
 					break;
 				case MatchFoundEvent _:
-					using (new ForegroundColor(ConsoleColor.Green))
-						Console.Write(" [Match!]");
+					using (new ConsoleForegroundColor(ConsoleColor.Green))
+						Console.Write(" [BINGO! Match detected!]");
 					break;
-				case CycleDetectdEvent _:
-					using (new ForegroundColor(ConsoleColor.Magenta))
-						Console.Write(" [Circular membership detected]");
+				case CycleDetectdEvent c:
+					using (new ConsoleForegroundColor(ConsoleColor.Magenta))
+						Console.Write($" [Circular membership: {c.Email}]");
 					break;
 				case ErrorEvent e:
 					Console.WriteLine();
-					using (new ForegroundColor(ConsoleColor.Red))
+					using (new ConsoleForegroundColor(ConsoleColor.Red))
 						Console.Write($"Http Error {e.StatusCode} - {e.Error}");
 					break;
 				case ExceptionEvent e:
 					Console.WriteLine();
-					using (new ForegroundColor(ConsoleColor.Red))
+					using (new ConsoleForegroundColor(ConsoleColor.Red))
 						Console.Write($"{e.Exception.GetType()} - {e.Error}. {e.Exception.Message}");
 					break;
 			}
@@ -110,18 +111,6 @@ namespace Microsoft
 
 			[Option("token", Required = true, HelpText = "Authentication token. To obtain a token, go to https://developer.microsoft.com/en-us/graph/graph-explorer and sign-in, then use browser Dev Tools to get a token")]
 			public string Token { get; set; }
-		}
-
-		private class ForegroundColor : IDisposable
-		{
-			private readonly ConsoleColor _previousColor;
-			public ForegroundColor(ConsoleColor color)
-			{
-				_previousColor = Console.ForegroundColor;
-				Console.ForegroundColor = color;
-			}
-
-			public void Dispose() => Console.ForegroundColor = _previousColor;
 		}
 	}
 }

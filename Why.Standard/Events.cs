@@ -39,7 +39,13 @@ namespace Microsoft
 
 	public class GroupLoadingEvent : ISearchEvent { }
 
-	public class CycleDetectdEvent : ISearchEvent { }
+	public class CycleDetectdEvent : ISearchEvent
+	{
+		public string Email { get; }
+
+		public CycleDetectdEvent(string email)
+			=> Email = email;
+	}
 
 	public class ErrorEvent : ISearchEvent
 	{

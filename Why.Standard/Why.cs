@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -55,7 +56,7 @@ namespace Microsoft
 			{
 				return ToCC
 					.Split(';')
-					.Select(x => ExtractEmail(x))
+					.Select(ExtractEmail)
 					.ToList();
 			}
 			catch (Exception e)
@@ -64,7 +65,7 @@ namespace Microsoft
 				return null;
 			}
 
-			string ExtractEmail(string x)
+			static string ExtractEmail(string x)
 			{
 				var start = x.LastIndexOf('<') + 1;
 				if (start == 0)
@@ -94,9 +95,7 @@ namespace Microsoft
 
 		private async Task<List<string>> FindMatches(HttpClient client, string email, string targetEmail)
 		{
-			var visitedGroups = new HashSet<string>();
-
-			var rootGroup = await FindGroup(email);
+			var rootGroup = await FindGroup(email, ImmutableArray<string>.Empty);
 			if (rootGroup == null)
 			{
 				var user = await FindUser(email);
@@ -107,7 +106,7 @@ namespace Microsoft
 				}
 
 				var userDisplayName = user["displayName"].ToString();
-				OnEvent(new MemberFoundEvent(targetEmail, userDisplayName, 1));
+				OnEvent(new MemberFoundEvent(email, userDisplayName, 1));
 				if (email == targetEmail)
 				{
 					OnEvent(new MatchFoundEvent());
@@ -118,18 +117,17 @@ namespace Microsoft
 				return null;
 			}
 
-			var list = await FindInGroup(rootGroup, 1);
+			var list = await FindInGroup(rootGroup, 1, ImmutableArray<string>.Empty);
 			return list?.Select(x => $@"{rootGroup["displayName"]}\{x}").ToList();
 
-			async Task<JObject> FindGroup(string groupEmail)
+			async Task<JObject> FindGroup(string groupEmail, IImmutableList<string> parents)
 			{
-				if (visitedGroups.Contains(groupEmail))
+				if (parents.Contains(groupEmail))
 				{
-					OnEvent(new CycleDetectdEvent());
+					OnEvent(new CycleDetectdEvent(groupEmail));
 					return null;
 				}
 
-				visitedGroups.Add(groupEmail);
 				if (_groupCache.TryGetValue(groupEmail, out var group))
 					return group;
 
@@ -219,7 +217,7 @@ namespace Microsoft
 				return members;
 			}
 
-			async Task<List<string>> FindInGroup(JObject group, int level)
+			async Task<List<string>> FindInGroup(JObject group, int level, IImmutableList<string> parents)
 			{
 				if (group == null)
 					return null;
@@ -231,6 +229,8 @@ namespace Microsoft
 				var members = await FindMembers(group);
 				if (members == null)
 					return null;
+
+				var childrensParent = parents.Add(groupEmail);
 
 				IEnumerable<string> result = new string[] { };
 				foreach (var child in members)
@@ -251,7 +251,7 @@ namespace Microsoft
 					if (childEmail == "")
 						continue;
 
-					var subSearch = await FindInGroup(await FindGroup(childEmail), level + 1);
+					var subSearch = await FindInGroup(await FindGroup(childEmail, childrensParent), level + 1, childrensParent);
 					if (subSearch != null)
 						result = result.Concat(subSearch.Select(x => $@"{child["displayName"]}\{x}"));
 				}

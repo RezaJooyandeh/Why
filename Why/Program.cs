@@ -11,18 +11,18 @@ namespace Microsoft
 		{
 			Task result = null;
 			Parser.Default.ParseArguments<Options>(args)
-				.WithParsed(options => result = Find(options.ToCC, options.Token));
+				.WithParsed(options => result = Find(options.ToCC, options.Token, options.LookFor));
 
 			if (result != null)
 				await result;
 		}
 
-		private static async Task Find(string toCC, string token)
+		private static async Task Find(string toCC, string token, string lookFor)
 		{
 			using (new ConsoleForegroundColor(ConsoleColor.Yellow))
 				Console.Write("Analysing addresses...");
 
-			var results = await new Why(Log).Find(toCC, token);
+			var results = await new Why(Log).Find(toCC, token, lookFor);
 
 			Console.WriteLine();
 			Console.WriteLine();
@@ -111,6 +111,9 @@ namespace Microsoft
 
 			[Option("token", Required = true, HelpText = "Authentication token. To obtain a token, go to https://developer.microsoft.com/en-us/graph/graph-explorer and sign-in, then use browser Dev Tools to get a token")]
 			public string Token { get; set; }
+
+			[Option("lookfor", Required = false, HelpText = "Optional email to search for; defaults to the authenticated user")]
+			public string LookFor { get; set; }
 		}
 	}
 }

@@ -21,26 +21,30 @@ namespace Microsoft
 
 		public Why(Action<ISearchEvent> events) => OnEvent = events;
 
-		public async Task<IReadOnlyList<string>> Find(string ToCC, string token)
+		public async Task<IReadOnlyList<string>> Find(string ToCC, string token, string lookFor)
 		{
 			using (var client = new HttpClient())
 			{
 				client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-				var myEmail = await FindMyEmail(client);
-				if (myEmail == null)
-					return null;
+				if (lookFor is null)
+				{
+					var myEmail = await FindMyEmail(client);
+					if (myEmail == null)
+						return null;
+					lookFor = myEmail;
+				}
 
 				var emails = FindAllEmails(ToCC);
 				if (emails == null)
 					return null;
 
 				var path = new List<string>();
-				if (myEmail != null)
+				if (lookFor != null)
 				{
 					foreach (var email in emails)
 					{
-						var results = await FindMatches(client, email, myEmail);
+						var results = await FindMatches(client, email, lookFor);
 						if (results != null)
 							path.AddRange(results);
 					}
